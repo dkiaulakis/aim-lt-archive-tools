@@ -31,7 +31,8 @@ node aim-lt.js search "claude code"        # full-text search
 node aim-lt.js list --topic coding-agents  # browse one topic
 node aim-lt.js read 6600 --source group    # one message, in full
 node aim-lt.js day 2026-09-03              # one day
-node aim-lt.js digest                      # the daily digests
+node aim-lt.js digest                      # the daily digest index
+node aim-lt.js digest 2026-09-06           # one day's digest, by date
 node aim-lt.js info                        # what the API offers right now
 ```
 
@@ -120,7 +121,7 @@ opening a public issue.
 node public_api_client_test.cjs
 ```
 
-57 checks. The suite drives both clients against a local stub server, so it needs no network and
+63 checks. The suite drives both clients against a local stub server, so it needs no network and
 does not touch the live archive.
 
 ## Licence

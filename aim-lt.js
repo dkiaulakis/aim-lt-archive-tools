@@ -21,7 +21,7 @@ const USAGE = `aim-lt - AI Mastermind LT public community archive
   aim-lt list                     browse newest first
   aim-lt read <id> --source <s>   read one message
   aim-lt day <YYYY-MM-DD>         everything published on one calendar day (Europe/Vilnius)
-  aim-lt digest [<window-end>]    the daily digest index, or one digest
+  aim-lt digest [<day>]           the daily digest index, or one day's digest
   aim-lt info                     what the API offers, and its limits
 
 Options

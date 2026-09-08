@@ -137,6 +137,62 @@ function createArchiveClient(options = {}) {
     }
   }
 
+  /** Turn an address the INDEX published into a path we are willing to fetch.
+   *
+   *  The index is our own site, but "our own site" is a belief about a response body, not a
+   *  fact about it. A client that fetches whatever URL a JSON reply hands it is the shape of
+   *  an SSRF, and it stays that shape whether or not today's reply is honest. So the only
+   *  thing that gets followed is an address that resolves back to the SAME ORIGIN we asked.
+   *  That refuses an absolute `https://elsewhere/`, a protocol-relative `//elsewhere/`, and
+   *  anything else that would take the fetch off this host. */
+  function resolveStatic(published, context) {
+    if (typeof published !== 'string' || published === '') {
+      throw new ArchiveApiError(200, 'edition_url_missing',
+        `the digest index published no address for ${context}`, `${baseUrl}/apzvalgos/index.json`);
+    }
+    let resolved;
+    try { resolved = new URL(published, baseUrl); } catch (_) {
+      throw new ArchiveApiError(200, 'edition_url_invalid',
+        `the digest index published an unreadable address for ${context}: ${published}`,
+        `${baseUrl}/apzvalgos/index.json`);
+    }
+    if (resolved.origin !== new URL(baseUrl).origin) {
+      throw new ArchiveApiError(200, 'edition_url_off_origin',
+        `the digest index published an address on another host and it was refused: ${published}`,
+        `${baseUrl}/apzvalgos/index.json`);
+    }
+    return resolved.pathname + resolved.search;
+  }
+
+  /** One daily edition, addressed the way the SITE says to address it.
+   *
+   *  It would be shorter to build `edition-<compact-timestamp>.json` from the window end, and
+   *  that is exactly the bug this replaced: `window_end_utc` is `2026-09-06T02:00:00Z` while
+   *  the file is `edition-20260906T020000Z.json`, so every derived address 404'd - 85 of 85,
+   *  measured against the live host. Re-deriving a filename is a SECOND naming rule that can
+   *  disagree with the site's own, and when it disagrees the site is right. So we read the
+   *  `url` the index publishes and follow that, and the selector is matched against the three
+   *  identifiers a caller could plausibly be holding.
+   *
+   *  Costs one extra request. That is the price of not having a private opinion about how the
+   *  other side names its files. */
+  async function digest(selector) {
+    const wanted = String(selector);
+    const index = await fetchStatic('/apzvalgos/index.json');
+    const editions = Array.isArray(index.editions) ? index.editions : [];
+    const found = editions.find((edition) => wanted === edition.date
+      || wanted === edition.window_end_utc
+      || wanted === String(edition.window_end_utc || '').replace(/[-:]/g, ''));
+    if (!found) {
+      const known = editions.slice(0, 3).map((edition) => edition.date).join(', ');
+      throw new ArchiveApiError(404, 'edition_not_found',
+        `no published edition matches "${wanted}"`
+        + (known ? `; the newest are ${known} (a date works, so does its window_end_utc)` : ''),
+        `${baseUrl}/apzvalgos/index.json`);
+    }
+    return fetchStatic(resolveStatic(found.url, found.date || wanted));
+  }
+
   return {
     baseUrl,
     urlFor,
@@ -151,7 +207,7 @@ function createArchiveClient(options = {}) {
     files: (params = {}) => request('files', params),
     media,
     digestIndex: () => fetchStatic('/apzvalgos/index.json'),
-    digest: (windowEnd) => fetchStatic(`/apzvalgos/edition-${String(windowEnd)}.json`),
+    digest,
   };
 }
 

@@ -110,13 +110,37 @@ function startStub() {
       response.writeHead(200, {'Content-Type': 'image/png', 'Content-Length': '72'});
       return response.end(Buffer.concat([Buffer.from('89504e470d0a1a0a', 'hex'), Buffer.alloc(64, 1)]));
     }
+    // The digest index, in the shapes the LIVE host really publishes. Two of them matter and
+    // the old fixture had both wrong, which is why a broken client went green here:
+    //   window_end_utc is the HUMAN iso form  -> 2026-09-06T02:00:00Z
+    //   url is the COMPACT filename           -> edition-20260906T020000Z.json
+    // They differ, so a client that builds the filename out of window_end_utc 404s on every
+    // edition. The old fixture published the compact form in BOTH fields, which hid it.
     if (url.pathname === '/apzvalgos/index.json') {
       return json(200, {schema_version: 1, editions: [
-        {date: '2026-09-06', window_end_utc: '20260906T020000Z', url: '/editions.html#e-20260906',
-         message_count: 41, topics: [{id: 'n8n', label: 'n8n', count: 7}]}]});
+        {date: '2026-09-06', window_end_utc: '2026-09-06T02:00:00Z',
+         url: '/apzvalgos/edition-20260906T020000Z.json',
+         message_count: 41, topics: [{id: 'n8n', label: 'n8n', count: 7}]},
+        // An edition whose published address points off this host. Nothing on the real site
+        // does this; it is here so the same-origin refusal has something to refuse.
+        {date: '2026-09-05', window_end_utc: '2026-09-05T02:00:00Z',
+         url: 'https://elsewhere.example/harvest.json',
+         message_count: 12, topics: []}]});
     }
+    // One edition, in the shape the live host really returns: the counts and topics live
+    // under `digest`, not at the top level. The old fixture put them at the top level, which
+    // is the same species of unfaithful stub that let the address bug through - a fixture
+    // that answers a shape the server never sends proves the client against a fiction.
     if (url.pathname === '/apzvalgos/edition-20260906T020000Z.json') {
-      return json(200, {date: '2026-09-06', topics: [{id: 'n8n', label: 'n8n', count: 7, source_message_ids: [901]}]});
+      return json(200, {
+        schema_version: 1,
+        window_start_utc: '2026-09-05T02:00:00Z', window_end_utc: '2026-09-06T02:00:00Z',
+        generated_at: '2026-09-07T00:57:22Z', group_id: -1003763547735,
+        source_coverage: {status: 'partial'},
+        digest: {message_count: 41, matched_message_count: 9, unmatched_message_count: 32,
+          media_message_count: 3, threads: [],
+          topics: [{id: 'n8n', label: 'n8n', message_count: 7, source_message_ids: [901]}]},
+      });
     }
     return json(404, {api_version: 1, error: 'unknown_resource', message: 'no'});
   });
@@ -199,8 +223,40 @@ function mcpSession(requests, env) {
 
     const digests = await client.digestIndex();
     check(digests.editions[0].date === '2026-09-06', 'digestIndex() reads the published digest list');
-    const digest = await client.digest('20260906T020000Z');
-    check(digest.topics[0].source_message_ids[0] === 901, 'digest() reads one edition');
+
+    // THE REGRESSION THIS SUITE MISSED. `digest` used to build the filename out of the
+    // selector it was handed. The old test handed it '20260906T020000Z' - the compact form,
+    // already converted - so the built address happened to be right and the suite went green
+    // while the shipped command 404'd on all 85 live editions. Every case below drives it
+    // with something a CALLER actually holds: the date, or the window_end_utc the index
+    // publishes. Neither is the filename.
+    const byDate = await client.digest('2026-09-06');
+    check(byDate.digest.topics[0].source_message_ids[0] === 901, 'digest() finds an edition by its date');
+    const byWindow = await client.digest('2026-09-06T02:00:00Z');
+    check(byWindow.digest.topics[0].source_message_ids[0] === 901, 'digest() finds an edition by its window_end_utc');
+    const byCompact = await client.digest('20260906T020000Z');
+    check(byCompact.digest.topics[0].source_message_ids[0] === 901, 'digest() still accepts the compact form');
+
+    // It must follow the address the INDEX published, not one it derived. The stub serves the
+    // edition ONLY at the compact filename, so reaching it from the human window_end_utc is
+    // only possible by reading `url` - a derived address would 404, exactly as it did live.
+    const digestRequests = seen.filter((entry) => entry.path.startsWith('/apzvalgos/edition-'));
+    check(digestRequests.length > 0
+      && digestRequests.every((entry) => entry.path === '/apzvalgos/edition-20260906T020000Z.json'),
+      'digest() fetches the address the index published, never a derived one');
+
+    let offOrigin = null;
+    try { await client.digest('2026-09-05'); } catch (error) { offOrigin = error; }
+    check(offOrigin && offOrigin.code === 'edition_url_off_origin',
+      'an edition address pointing at another host is refused, not fetched');
+    check(!seen.some((entry) => entry.path.includes('harvest.json')),
+      'the refused off-origin address was never put on the wire');
+
+    let unknownSelector = null;
+    try { await client.digest('1999-01-01'); } catch (error) { unknownSelector = error; }
+    check(unknownSelector && unknownSelector.code === 'edition_not_found'
+      && /2026-09-06/.test(unknownSelector.detail),
+      'an unknown selector names the editions that do exist instead of a bare 404');
 
     // ------------------------------------------------------------------ the MCP server
     const session = await mcpSession([
