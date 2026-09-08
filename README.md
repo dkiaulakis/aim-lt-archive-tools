@@ -89,8 +89,8 @@ respect it by default:
 
 - **Wait about 10 seconds between requests.** The API advertises this as
   `requested_interval_seconds`.
-- **Ask for what you need, not the ceiling.** Every list and search answer includes `total`, so
-  you can see how much there is without paging to find out.
+- **Ask for what you need, not the ceiling.** Every list and search answer carries `page.total`,
+  so you can see how much there is without paging to find out.
 - **Cache what you fetched.** Re-running the same search five times helps nobody.
 
 If you are building something heavier than a few queries, open an issue first and say what you

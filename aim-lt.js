@@ -103,7 +103,16 @@ async function main(argv) {
     if (options.json) return json(payload);
     const lines = Object.entries(payload.resources).map(([name, resource]) =>
       `  ${name.padEnd(9)} ${resource.surface.padEnd(7)} ${resource.url}\n    ${resource.description}`);
-    return process.stdout.write(`${payload.name}\n\n${lines.join('\n')}\n\nlimits: `
+    // THE TOPIC KEYS, printed. The API has always returned them and this command never showed
+    // them, so the only way to learn a valid ?topic= value was to read the raw JSON - and a
+    // guessed topic returns nothing, which reads exactly like an empty archive. The KEY is what
+    // ?topic= takes; the label beside it is the human name and is often Lithuanian.
+    const topics = Object.entries(payload.topics || {});
+    const topicBlock = topics.length
+      ? '\n\ntopics (use the key with --topic):\n'
+        + topics.map(([key, label]) => `  ${key.padEnd(18)} ${label}`).join('\n')
+      : '';
+    return process.stdout.write(`${payload.name}\n\n${lines.join('\n')}${topicBlock}\n\nlimits: `
       + `${JSON.stringify(payload.limits)}\n\n${payload.notice}\n`);
   }
   if (command === 'search') {

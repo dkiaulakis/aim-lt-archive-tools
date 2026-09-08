@@ -16,8 +16,9 @@ Set it up and confirm it works:
        cd aim-lt-archive-tools
        node aim-lt.js info
 
-   `info` returns the real topic list and the current rate limits. Read them - do not guess a
-   topic name, and do not exceed the limits it states.
+   `info` prints the 16 real topic KEYS and the current rate limits. Use the key with
+   `--topic` (`coding-agents`), not the human label beside it - the labels are mostly
+   Lithuanian. Do not guess a topic name, and do not exceed the limits it states.
 
 2. Tell me, in plain language: how many messages are in there, what the topics actually are,
    and roughly how active the busiest ones are.

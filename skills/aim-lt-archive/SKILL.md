@@ -28,8 +28,10 @@ Add `--json` for raw output.
 
 ## Use it in this order
 
-1. **`info` first, once.** It returns the real topic list and the current limits. Guessing a
-   topic name wastes a call and returns nothing.
+1. **`info` first, once.** It prints the 16 real topic keys and the current limits. Use the
+   KEY with `--topic` (`coding-agents`), not the human label beside it (`Programavimas /
+   agentai`) — the labels are mostly Lithuanian. Guessing a topic returns an empty answer that
+   looks exactly like an empty archive.
 2. **Search before you browse.** One search with one specific term beats paging a topic.
 3. **Read the message in full before quoting it.** A search snippet is a fragment; conclusions
    live in the reply, not the hit.
@@ -42,8 +44,9 @@ nothing while a single term returns plenty. Try the Lithuanian word too: this is
 community and `agentas` and `agent` find different messages.
 
 **A busy topic and a quiet one look identical until you count.** Some topics carry hundreds of
-messages, others a handful. Check `total` in the response before concluding the archive is empty
-on a subject — an empty answer usually means the wrong term, not an empty archive.
+messages, others one. The count is at **`page.total`** — not at the top level, which is the
+mistake that makes a full topic look empty. Check it before concluding the archive has nothing
+on a subject; an empty answer usually means the wrong term, not an empty archive.
 
 **Descriptions of links and images are written by a model**, not by a person. They arrive with
 `generated_by: "model"`. Never attribute one to a community member. Say "an automatic description

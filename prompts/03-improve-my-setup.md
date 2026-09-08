@@ -13,7 +13,7 @@ and wait for my answer. Do not guess.
 
 Then search the archive for what they discovered about those exact things: workflows they built,
 tools they adopted or dropped, models they compared, mistakes that cost them time. Start from the
-topic list in `node aim-lt.js info` rather than from topics you assume exist.
+topic keys `node aim-lt.js info` prints rather than from topics you assume exist.
 
 Bring me back, in order of what would help me most:
 
