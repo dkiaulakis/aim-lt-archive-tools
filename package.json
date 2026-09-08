@@ -1,0 +1,14 @@
+{
+  "name": "aim-lt-archive-tools",
+  "version": "1.0.0",
+  "description": "MCP server and CLI for the public AI Mastermind LT community archive. No dependencies, no credentials, read-only.",
+  "license": "MIT",
+  "author": "Darius Kiaulakis",
+  "homepage": "https://grupe.aimastermind.lt",
+  "repository": { "type": "git", "url": "git+https://github.com/dkiaulakis/aim-lt-archive-tools.git" },
+  "engines": { "node": ">=18" },
+  "bin": { "aim-lt": "./aim-lt.js", "aim-lt-archive-mcp": "./aim-lt-archive-mcp.js" },
+  "files": ["aim-lt.js", "aim-lt-archive-mcp.js", "archive-client.js", "skills", "prompts", "README.md", "SECURITY.md", "LICENSE"],
+  "scripts": { "test": "node public_api_client_test.cjs" },
+  "keywords": ["mcp", "model-context-protocol", "telegram", "archive", "cli", "lithuania", "community"]
+}
