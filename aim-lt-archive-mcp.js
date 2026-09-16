@@ -34,7 +34,7 @@
  *     "mcpServers": {
  *       "aim-lt-archive": {
  *         "command": "node",
- *         "args": ["/abs/path/to/tools/Telegram-AIM-LT/public-api/aim-lt-archive-mcp.js"]
+ *         "args": ["/absolute/path/to/aim-lt-archive-tools/aim-lt-archive-mcp.js"]
  *       }
  *     }
  *   }

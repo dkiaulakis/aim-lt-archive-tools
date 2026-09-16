@@ -40,7 +40,11 @@ Add `--json` to any command to get the raw response instead of formatted text.
 
 ## The MCP server
 
-Four tools — `archive_search`, `archive_read`, `archive_links`, `archive_files` — over stdio.
+Six tools over stdio, one per thing the archive lets you ask for: `archive_search` (full-text
+search), `archive_list` (browse newest first, by topic, chat or date range), `archive_message`
+(one message in full), `archive_media` (one approved attachment, images returned as an image),
+`archive_links` (every link the community shared) and `archive_files` (every approved
+attachment, metadata only).
 
 Add this to your MCP client's config. **Use an absolute path**: an MCP client has no working
 directory you can rely on.
@@ -90,8 +94,14 @@ respect it by default:
 
 - **Wait about 10 seconds between requests.** The API advertises this as
   `requested_interval_seconds`.
-- **Ask for what you need, not the ceiling.** Every list and search answer carries `page.total`,
-  so you can see how much there is without paging to find out.
+- **Ask for what you need, not the ceiling.** Every messages and search answer carries
+  `page.total`, so you can see how much there is without paging to find out. The links and
+  files shelves carry `page.has_more` and `page.next` only; `next` is present while there is
+  a next page.
+- **The daily digest posts are not a member's words.** Rows whose text starts with
+  `🤖 AI santrauka` or `📋 Grupės santrauka` are the community bot's daily summaries, posted
+  into both chats. Use them as an index of what a day was about; never quote one as something
+  a member said.
 - **Cache what you fetched.** Re-running the same search five times helps nobody.
 
 If you are building something heavier than a few queries, open an issue first and say what you
@@ -121,8 +131,9 @@ opening a public issue.
 node public_api_client_test.cjs
 ```
 
-63 checks. The suite drives both clients against a local stub server, so it needs no network and
-does not touch the live archive.
+88 checks. The suite drives both clients against a local stub server, so it needs no network and
+does not touch the live archive. It also holds this README and the skill to the tool names the
+server actually registers, so the docs cannot drift from the wire again.
 
 ## Licence
 

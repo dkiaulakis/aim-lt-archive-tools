@@ -280,6 +280,24 @@ function mcpSession(requests, env) {
     check(JSON.stringify(tools) === JSON.stringify(['archive_search', 'archive_list', 'archive_message',
       'archive_media', 'archive_links', 'archive_files']),
       'exactly six tools over the four GRANTED surfaces');
+    // THE DOCS BESIDE THE SERVER NAME THE TOOLS THE SERVER REGISTERS - no more, no fewer, no
+    // phantom. Measured 2026-09-16: README.md and the skill both said "four tools" and named
+    // `archive_read`, which no server ever registered, while the server shipped six. A doc is
+    // what an assistant reads before it connects; a name that is not on the wire is a tool
+    // call that fails for every stranger. Every doc that names ANY tool must name ALL of them.
+    const fs = require('node:fs');
+    const docs = ['README.md', path.join('skills', 'aim-lt-archive', 'SKILL.md'),
+      path.join('prompts', '01-get-started.md'), path.join('prompts', '02-research-a-topic.md'),
+      path.join('prompts', '03-improve-my-setup.md'), path.join('prompts', 'README.md')]
+      .map((name) => path.join(DIR, name)).filter((file) => fs.existsSync(file));
+    check(docs.length >= 1, 'at least the README sits beside the server');
+    for (const doc of docs) {
+      const named = [...new Set(fs.readFileSync(doc, 'utf8').match(/\barchive_[a-z_]+\b/g) || [])];
+      for (const name of named) check(tools.includes(name), `${path.basename(doc)} names a tool the server does not register: ${name}`);
+      if (named.length) {
+        for (const name of tools) check(named.includes(name), `${path.basename(doc)} names some tools but not ${name}`);
+      }
+    }
     // The shelves must ANNOUNCE that their descriptions are machine-written. An assistant that
     // reads only the tool description is the one most likely to quote a sentence as a member's.
     const shelfText = JSON.stringify(reply(2).result.tools.filter(
